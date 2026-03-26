@@ -1,15 +1,11 @@
-import { createContext, useContext, useState } from 'react'
-import { products as initialProducts } from '../data/products'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 const ProductStoreContext = createContext(null)
 
 export function ProductStoreProvider({ children }) {
-  const [products, setProducts] = useState(() => {
-    try {
-      const saved = localStorage.getItem('angelina_products')
-      return saved ? JSON.parse(saved) : initialProducts
-    } catch { return initialProducts }
-  })
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [siteSettings, setSiteSettings] = useState(() => {
     try {
@@ -21,7 +17,7 @@ export function ProductStoreProvider({ children }) {
         heroBadge: 'New Collection 2025',
         marqueeItems: 'Luxury Fashion,Fine Jewellery,Handcrafted,Dubai UAE,New Arrivals,Exclusive Designs',
         storyTitle: 'Crafted with Passion',
-        storyBody: 'Born in the heart of Dubai, Angelina was founded on the belief that every woman deserves to feel extraordinary. We blend traditional craftsmanship with contemporary elegance, creating pieces that transcend trends.',
+        storyBody: 'Born in the heart of Dubai, Angelina was founded on the belief that every woman deserves to feel extraordinary.',
         statYears: '12+',
         statDesigns: '500+',
         contactEmail: 'hello@angelina.ae',
@@ -31,9 +27,62 @@ export function ProductStoreProvider({ children }) {
     } catch { return {} }
   })
 
-  const save = (newProducts) => {
-    setProducts(newProducts)
-    localStorage.setItem('angelina_products', JSON.stringify(newProducts))
+  // Fetch products from Supabase
+  const fetchProducts = async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id', { ascending: true })
+    if (!error && data) {
+      // Normalize sizes from string to array
+      const normalized = data.map(p => ({
+        ...p,
+        oldPrice: p.old_price,
+        sizes: p.sizes ? p.sizes.split(',').map(s => s.trim()) : null,
+      }))
+      setProducts(normalized)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchProducts() }, [])
+
+  const addProduct = async (product) => {
+    const { data, error } = await supabase.from('products').insert([{
+      name: product.name,
+      category: product.category,
+      price: Number(product.price),
+      old_price: product.oldPrice ? Number(product.oldPrice) : null,
+      badge: product.badge || null,
+      description: product.description || null,
+      material: product.material || null,
+      origin: product.origin || null,
+      sizes: Array.isArray(product.sizes) ? product.sizes.join(',') : (product.sizes || null),
+      image_url: product.image_url || null,
+    }]).select()
+    if (!error) fetchProducts()
+  }
+
+  const updateProduct = async (id, updates) => {
+    const { error } = await supabase.from('products').update({
+      name: updates.name,
+      category: updates.category,
+      price: Number(updates.price),
+      old_price: updates.oldPrice ? Number(updates.oldPrice) : null,
+      badge: updates.badge || null,
+      description: updates.description || null,
+      material: updates.material || null,
+      origin: updates.origin || null,
+      sizes: Array.isArray(updates.sizes) ? updates.sizes.join(',') : (updates.sizes || null),
+      image_url: updates.image_url || null,
+    }).eq('id', id)
+    if (!error) fetchProducts()
+  }
+
+  const deleteProduct = async (id) => {
+    const { error } = await supabase.from('products').delete().eq('id', id)
+    if (!error) fetchProducts()
   }
 
   const saveSettings = (newSettings) => {
@@ -41,25 +90,11 @@ export function ProductStoreProvider({ children }) {
     localStorage.setItem('angelina_settings', JSON.stringify(newSettings))
   }
 
-  const addProduct = (product) => {
-    const newList = [...products, { ...product, id: Date.now() }]
-    save(newList)
-  }
-
-  const updateProduct = (id, updates) => {
-    const newList = products.map(p => p.id === id ? { ...p, ...updates } : p)
-    save(newList)
-  }
-
-  const deleteProduct = (id) => {
-    const newList = products.filter(p => p.id !== id)
-    save(newList)
-  }
-
-  const reorderProducts = (newList) => save(newList)
-
   return (
-    <ProductStoreContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, reorderProducts, siteSettings, saveSettings }}>
+    <ProductStoreContext.Provider value={{
+      products, loading, addProduct, updateProduct, deleteProduct,
+      siteSettings, saveSettings, fetchProducts
+    }}>
       {children}
     </ProductStoreContext.Provider>
   )
