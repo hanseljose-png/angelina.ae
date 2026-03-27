@@ -4,3 +4,9 @@ dist
 .env.local
 .DS_Store
 *.log
+Photos/
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.gif

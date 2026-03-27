@@ -7,19 +7,21 @@ const MARQUEE_ITEMS = ['Luxury Fashion','Fine Jewellery','Handcrafted','Dubai UA
 
 function HeroSlideshow({ images }) {
   const [current, setCurrent] = useState(0)
-  const [prev, setPrev] = useState(null)
+  const [next, setNext] = useState(1)
   const [transitioning, setTransitioning] = useState(false)
 
   useEffect(() => {
     if (!images || images.length <= 1) return
     const timer = setInterval(() => {
-      setPrev(current)
       setTransitioning(true)
-      setCurrent(c => (c + 1) % images.length)
-      setTimeout(() => { setPrev(null); setTransitioning(false) }, 1200)
-    }, 4000)
+      setTimeout(() => {
+        setCurrent(c => (c + 1) % images.length)
+        setNext(c => (c + 2) % images.length)
+        setTransitioning(false)
+      }, 2000)
+    }, 5000)
     return () => clearInterval(timer)
-  }, [images, current])
+  }, [images])
 
   if (!images || images.length === 0) return (
     <div style={{ position: 'absolute', right: '-80px', top: '50%', transform: 'translateY(-50%)', width: '600px', height: '600px', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '50%' }}>
@@ -28,32 +30,66 @@ function HeroSlideshow({ images }) {
     </div>
   )
 
+  const nextIndex = (current + 1) % images.length
+
   return (
     <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%', overflow: 'hidden' }}>
-      {/* Fade overlay left */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0A0A0A 0%, rgba(10,10,10,0.4) 35%, transparent 60%)', zIndex: 2 }} />
-      {/* Bottom overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,10,10,0.6) 0%, transparent 40%)', zIndex: 2 }} />
+      {/* Left fade overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0A0A0A 0%, rgba(10,10,10,0.5) 30%, transparent 60%)', zIndex: 3, pointerEvents: 'none' }} />
+      {/* Bottom fade overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,10,10,0.5) 0%, transparent 40%)', zIndex: 3, pointerEvents: 'none' }} />
 
-      {/* Previous image fading out */}
-      {prev !== null && (
-        <img key={`prev-${prev}`} src={images[prev]} alt=""
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: transitioning ? 0 : 1, transition: 'opacity 1.2s ease-in-out' }} />
+      {/* Current image — Ken Burns zoom out */}
+      <div key={`curr-${current}`} style={{
+        position: 'absolute', inset: 0, overflow: 'hidden',
+        opacity: transitioning ? 0 : 1,
+        transition: 'opacity 2s ease-in-out',
+      }}>
+        <img src={images[current]} alt="Angelina Collection"
+          style={{
+            width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top',
+            filter: 'brightness(0.82)',
+            animation: 'kenburns 6s ease-in-out forwards',
+          }} />
+      </div>
+
+      {/* Next image — ready underneath */}
+      {images.length > 1 && (
+        <div key={`next-${nextIndex}`} style={{
+          position: 'absolute', inset: 0, overflow: 'hidden',
+          opacity: transitioning ? 1 : 0,
+          transition: 'opacity 2s ease-in-out',
+          zIndex: 1,
+        }}>
+          <img src={images[nextIndex]} alt=""
+            style={{
+              width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top',
+              filter: 'brightness(0.82)',
+              animation: 'kenburns2 6s ease-in-out forwards',
+            }} />
+        </div>
       )}
-
-      {/* Current image fading in */}
-      <img key={`curr-${current}`} src={images[current]} alt="Angelina Collection"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: transitioning ? 1 : 1, transition: 'opacity 1.2s ease-in-out', filter: 'brightness(0.85)' }} />
 
       {/* Dot indicators */}
       {images.length > 1 && (
-        <div style={{ position: 'absolute', bottom: '30px', right: '30px', display: 'flex', gap: '8px', zIndex: 3 }}>
+        <div style={{ position: 'absolute', bottom: '30px', right: '30px', display: 'flex', gap: '8px', zIndex: 4 }}>
           {images.map((_, i) => (
             <div key={i} onClick={() => setCurrent(i)}
-              style={{ width: i === current ? '24px' : '6px', height: '6px', background: i === current ? 'var(--gold)' : 'rgba(201,168,76,0.3)', transition: 'all 0.4s', cursor: 'pointer', borderRadius: i === current ? '3px' : '50%' }} />
+              style={{ width: i === current ? '24px' : '6px', height: '6px', background: i === current ? '#C9A84C' : 'rgba(201,168,76,0.3)', transition: 'all 0.5s', cursor: 'pointer', borderRadius: i === current ? '3px' : '50%' }} />
           ))}
         </div>
       )}
+
+      <style>{`
+        @keyframes kenburns {
+          0%   { transform: scale(1.15) translate(-2%, 1%); }
+          100% { transform: scale(1.0)  translate(0%, 0%); }
+        }
+        @keyframes kenburns2 {
+          0%   { transform: scale(1.12) translate(2%, -1%); }
+          100% { transform: scale(1.0)  translate(0%, 0%); }
+        }
+      `}</style>
     </div>
   )
 }
@@ -62,10 +98,11 @@ export default function HomePage() {
   const { products, siteSettings } = useProductStore()
   const featured = products.slice(0, 4)
 
-  // Parse hero images
   let heroImages = []
   try {
-    heroImages = siteSettings?.heroImages ? JSON.parse(siteSettings.heroImages) : (siteSettings?.heroImageUrl ? [siteSettings.heroImageUrl] : [])
+    heroImages = siteSettings?.heroImages
+      ? JSON.parse(siteSettings.heroImages)
+      : siteSettings?.heroImageUrl ? [siteSettings.heroImageUrl] : []
   } catch { heroImages = siteSettings?.heroImageUrl ? [siteSettings.heroImageUrl] : [] }
 
   return (
@@ -77,14 +114,14 @@ export default function HomePage() {
 
         <HeroSlideshow images={heroImages} />
 
-        {/* LEFT SIDE text */}
-        <div style={{ position: 'relative', zIndex: 3, padding: '0 60px', maxWidth: '650px', animation: 'fadeUp 1.2s ease forwards' }}>
-          <div style={{ fontSize: '10px', letterSpacing: '5px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* LEFT text */}
+        <div style={{ position: 'relative', zIndex: 4, padding: '0 60px', maxWidth: '650px', animation: 'fadeUp 1.2s ease forwards' }}>
+          <div style={{ fontSize: '10px', letterSpacing: '5px', textTransform: 'uppercase', color: '#C9A84C', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             {siteSettings?.heroBadge || 'New Collection 2025'}
-            <span style={{ width: '60px', height: '1px', background: 'var(--gold)', opacity: 0.5 }} />
+            <span style={{ width: '60px', height: '1px', background: '#C9A84C', opacity: 0.5 }} />
           </div>
-          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '80px', fontWeight: 300, lineHeight: 1.05, marginBottom: '12px' }}>
-            Where <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Luxury</em><br />Meets Grace
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '80px', fontWeight: 300, lineHeight: 1.05, marginBottom: '12px', color: 'var(--cream)' }}>
+            Where <em style={{ fontStyle: 'italic', color: '#C9A84C' }}>Luxury</em><br />Meets Grace
           </h1>
           <p style={{ fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '40px', fontWeight: 300 }}>
             {siteSettings?.heroSubtitle || 'Fashion & Fine Jewellery — Dubai, UAE'}
@@ -98,19 +135,19 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', color: 'rgba(250,248,243,0.3)', fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', zIndex: 3 }}>
-          <div style={{ width: '1px', height: '50px', background: 'linear-gradient(to bottom,var(--gold),transparent)', animation: 'scrollPulse 2s ease infinite' }} />
+        <div style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', color: 'rgba(250,248,243,0.3)', fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', zIndex: 4 }}>
+          <div style={{ width: '1px', height: '50px', background: 'linear-gradient(to bottom,#C9A84C,transparent)', animation: 'scrollPulse 2s ease infinite' }} />
           Scroll
         </div>
       </section>
 
       {/* MARQUEE */}
-      <div style={{ background: 'var(--gold)', padding: '12px 0', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+      <div style={{ background: '#C9A84C', padding: '12px 0', overflow: 'hidden', whiteSpace: 'nowrap' }}>
         <div style={{ display: 'inline-flex', animation: 'marquee 20s linear infinite' }}>
           {[...(siteSettings?.marqueeItems?.split(',') || MARQUEE_ITEMS), ...(siteSettings?.marqueeItems?.split(',') || MARQUEE_ITEMS)].map((item, i) => (
             <span key={i}>
-              <span style={{ fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', color: 'var(--black)', fontWeight: 600, padding: '0 40px' }}>{item.trim()}</span>
-              <span style={{ color: 'var(--black)', opacity: 0.4, fontSize: '14px' }}>✦</span>
+              <span style={{ fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', color: '#0A0A0A', fontWeight: 600, padding: '0 40px' }}>{item.trim()}</span>
+              <span style={{ color: '#0A0A0A', opacity: 0.4, fontSize: '14px' }}>✦</span>
             </span>
           ))}
         </div>
@@ -127,7 +164,7 @@ export default function HomePage() {
           {featured.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
         <div style={{ textAlign: 'center', marginTop: '50px' }}>
-          <Link to="/shop" className="btn-primary" style={{ background: 'var(--black)', color: 'var(--gold)' }}>View All Products →</Link>
+          <Link to="/shop" className="btn-primary" style={{ background: 'var(--black)', color: '#C9A84C' }}>View All Products →</Link>
         </div>
       </section>
 
@@ -153,7 +190,7 @@ export default function HomePage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px', marginTop: '40px', paddingTop: '40px', borderTop: '1px solid rgba(201,168,76,0.15)' }}>
               {[[siteSettings?.statYears||'12+','Years'],[siteSettings?.statDesigns||'500+','Designs'],['UAE','Based']].map(([num,label]) => (
                 <div key={label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: '40px', fontWeight: 300, color: 'var(--gold)' }}>{num}</div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: '40px', fontWeight: 300, color: '#C9A84C' }}>{num}</div>
                   <div style={{ fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: '6px' }}>{label}</div>
                 </div>
               ))}
@@ -174,22 +211,22 @@ export default function HomePage() {
             { text: 'My bridal set from Angelina was breathtaking. Every guest asked where my jewellery was from. Forever a loyal customer.', author: 'Noura Al Mansoori — Sharjah' },
           ].map((t, i) => (
             <div key={i} style={{ background: '#111', padding: '48px 36px', position: 'relative' }}>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '80px', color: 'var(--gold)', opacity: 0.3, position: 'absolute', top: '16px', left: '28px', lineHeight: 1 }}>"</div>
-              <div style={{ color: 'var(--gold)', fontSize: '11px', letterSpacing: '2px', marginBottom: '16px' }}>★★★★★</div>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '80px', color: '#C9A84C', opacity: 0.3, position: 'absolute', top: '16px', left: '28px', lineHeight: 1 }}>"</div>
+              <div style={{ color: '#C9A84C', fontSize: '11px', letterSpacing: '2px', marginBottom: '16px' }}>★★★★★</div>
               <p style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', fontStyle: 'italic', lineHeight: 1.8, color: 'rgba(250,248,243,0.7)', marginBottom: '28px' }}>{t.text}</p>
-              <div style={{ fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)' }}>{t.author}</div>
+              <div style={{ fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: '#C9A84C' }}>{t.author}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* NEWSLETTER */}
-      <section style={{ padding: '80px 60px', background: 'var(--gold)', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '48px', fontWeight: 300, color: 'var(--black)', marginBottom: '12px' }}>Join the Inner Circle</h2>
+      <section style={{ padding: '80px 60px', background: '#C9A84C', textAlign: 'center' }}>
+        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '48px', fontWeight: 300, color: '#0A0A0A', marginBottom: '12px' }}>Join the Inner Circle</h2>
         <p style={{ fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(0,0,0,0.5)', marginBottom: '40px' }}>Be the first to discover new collections & exclusive offers</p>
         <div style={{ display: 'flex', maxWidth: '480px', margin: '0 auto' }}>
-          <input type="email" placeholder="Your email address" style={{ flex: 1, padding: '16px 24px', border: 'none', background: 'rgba(0,0,0,0.12)', color: 'var(--black)', fontFamily: 'var(--font-sans)', fontSize: '12px', outline: 'none' }} />
-          <button className="btn-primary" style={{ background: 'var(--black)', color: 'var(--gold)', padding: '16px 28px' }}>Subscribe</button>
+          <input type="email" placeholder="Your email address" style={{ flex: 1, padding: '16px 24px', border: 'none', background: 'rgba(0,0,0,0.12)', color: '#0A0A0A', fontFamily: 'var(--font-sans)', fontSize: '12px', outline: 'none' }} />
+          <button className="btn-primary" style={{ background: '#0A0A0A', color: '#C9A84C', padding: '16px 28px' }}>Subscribe</button>
         </div>
       </section>
 
