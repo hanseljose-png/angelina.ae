@@ -1,13 +1,72 @@
 import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useProductStore } from '../context/ProductStore'
 import ProductCard from '../components/ui/ProductCard'
 
 const MARQUEE_ITEMS = ['Luxury Fashion','Fine Jewellery','Handcrafted','Dubai UAE','New Arrivals','Exclusive Designs']
 
+function HeroSlideshow({ images }) {
+  const [current, setCurrent] = useState(0)
+  const [prev, setPrev] = useState(null)
+  const [transitioning, setTransitioning] = useState(false)
+
+  useEffect(() => {
+    if (!images || images.length <= 1) return
+    const timer = setInterval(() => {
+      setPrev(current)
+      setTransitioning(true)
+      setCurrent(c => (c + 1) % images.length)
+      setTimeout(() => { setPrev(null); setTransitioning(false) }, 1200)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [images, current])
+
+  if (!images || images.length === 0) return (
+    <div style={{ position: 'absolute', right: '-80px', top: '50%', transform: 'translateY(-50%)', width: '600px', height: '600px', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '50%' }}>
+      <div style={{ position: 'absolute', inset: '40px', border: '1px solid rgba(201,168,76,0.1)', borderRadius: '50%' }} />
+      <div style={{ position: 'absolute', inset: '80px', border: '1px solid rgba(201,168,76,0.08)', borderRadius: '50%' }} />
+    </div>
+  )
+
+  return (
+    <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%', overflow: 'hidden' }}>
+      {/* Fade overlay left */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0A0A0A 0%, rgba(10,10,10,0.4) 35%, transparent 60%)', zIndex: 2 }} />
+      {/* Bottom overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(10,10,10,0.6) 0%, transparent 40%)', zIndex: 2 }} />
+
+      {/* Previous image fading out */}
+      {prev !== null && (
+        <img key={`prev-${prev}`} src={images[prev]} alt=""
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: transitioning ? 0 : 1, transition: 'opacity 1.2s ease-in-out' }} />
+      )}
+
+      {/* Current image fading in */}
+      <img key={`curr-${current}`} src={images[current]} alt="Angelina Collection"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: transitioning ? 1 : 1, transition: 'opacity 1.2s ease-in-out', filter: 'brightness(0.85)' }} />
+
+      {/* Dot indicators */}
+      {images.length > 1 && (
+        <div style={{ position: 'absolute', bottom: '30px', right: '30px', display: 'flex', gap: '8px', zIndex: 3 }}>
+          {images.map((_, i) => (
+            <div key={i} onClick={() => setCurrent(i)}
+              style={{ width: i === current ? '24px' : '6px', height: '6px', background: i === current ? 'var(--gold)' : 'rgba(201,168,76,0.3)', transition: 'all 0.4s', cursor: 'pointer', borderRadius: i === current ? '3px' : '50%' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const { products, siteSettings } = useProductStore()
-  const heroImage = siteSettings?.heroImageUrl || null
   const featured = products.slice(0, 4)
+
+  // Parse hero images
+  let heroImages = []
+  try {
+    heroImages = siteSettings?.heroImages ? JSON.parse(siteSettings.heroImages) : (siteSettings?.heroImageUrl ? [siteSettings.heroImageUrl] : [])
+  } catch { heroImages = siteSettings?.heroImageUrl ? [siteSettings.heroImageUrl] : [] }
 
   return (
     <main>
@@ -16,22 +75,10 @@ export default function HomePage() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#0A0A0A 0%,#1a1408 40%,#0d0d0d 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'repeating-linear-gradient(45deg,#C9A84C 0,#C9A84C 1px,transparent 0,transparent 50%)', backgroundSize: '20px 20px' }} />
 
-        {/* RIGHT SIDE — image or decorative circle */}
-        {heroImage ? (
-          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '45%', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0A0A0A 0%, transparent 30%)', zIndex: 1 }} />
-            <img src={heroImage} alt="Angelina Collection"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'brightness(0.85)' }} />
-          </div>
-        ) : (
-          <div style={{ position: 'absolute', right: '-80px', top: '50%', transform: 'translateY(-50%)', width: '600px', height: '600px', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '50%' }}>
-            <div style={{ position: 'absolute', inset: '40px', border: '1px solid rgba(201,168,76,0.1)', borderRadius: '50%' }} />
-            <div style={{ position: 'absolute', inset: '80px', border: '1px solid rgba(201,168,76,0.08)', borderRadius: '50%' }} />
-          </div>
-        )}
+        <HeroSlideshow images={heroImages} />
 
-        {/* LEFT SIDE — text content */}
-        <div style={{ position: 'relative', zIndex: 2, padding: '0 60px', maxWidth: '650px', animation: 'fadeUp 1.2s ease forwards' }}>
+        {/* LEFT SIDE text */}
+        <div style={{ position: 'relative', zIndex: 3, padding: '0 60px', maxWidth: '650px', animation: 'fadeUp 1.2s ease forwards' }}>
           <div style={{ fontSize: '10px', letterSpacing: '5px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             {siteSettings?.heroBadge || 'New Collection 2025'}
             <span style={{ width: '60px', height: '1px', background: 'var(--gold)', opacity: 0.5 }} />
@@ -51,7 +98,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', color: 'rgba(250,248,243,0.3)', fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', zIndex: 2 }}>
+        <div style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', color: 'rgba(250,248,243,0.3)', fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', zIndex: 3 }}>
           <div style={{ width: '1px', height: '50px', background: 'linear-gradient(to bottom,var(--gold),transparent)', animation: 'scrollPulse 2s ease infinite' }} />
           Scroll
         </div>
@@ -89,10 +136,10 @@ export default function HomePage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <div style={{ position: 'absolute', top: '-20px', left: '-20px', right: '20px', bottom: '20px', border: '1px solid rgba(201,168,76,0.2)' }} />
-            <div style={{ aspectRatio: '3/4', maxHeight: '500px', background: 'linear-gradient(160deg,#1a1408,#0d0d0d)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-              {heroImage
-                ? <img src={heroImage} alt="Brand Story" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: 0.8 }} />
-                : <div style={{ fontFamily: 'var(--font-serif)', fontSize: '150px', fontWeight: 300, color: 'rgba(201,168,76,0.1)', lineHeight: 1 }}>A</div>
+            <div style={{ aspectRatio: '3/4', maxHeight: '500px', background: 'linear-gradient(160deg,#1a1408,#0d0d0d)', overflow: 'hidden', position: 'relative' }}>
+              {heroImages[0]
+                ? <img src={heroImages[0]} alt="Brand" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: 0.8 }} />
+                : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontFamily: 'var(--font-serif)', fontSize: '150px', fontWeight: 300, color: 'rgba(201,168,76,0.1)' }}>A</div>
               }
             </div>
           </div>
