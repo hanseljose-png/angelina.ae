@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 
 export default function CartPage() {
-  const { items, removeFromCart, updateQty, total, clearCart } = useCart()
+  const { items, removeFromCart, updateQty, total } = useCart()
+  const navigate = useNavigate()
 
   if (items.length === 0) return (
     <main style={{ paddingTop: '160px', minHeight: '100vh', background: 'var(--cream)', textAlign: 'center' }}>
@@ -20,8 +21,10 @@ export default function CartPage() {
           <div>
             {items.map(item => (
               <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr auto', gap: '24px', padding: '24px 0', borderBottom: '1px solid rgba(0,0,0,0.08)', alignItems: 'center' }}>
-                <div style={{ aspectRatio: '1', background: 'var(--cream-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', opacity: 0.3 }}>
-                  {item.category === 'jewellery' ? '💎' : '👗'}
+                <div style={{ aspectRatio: '1', background: 'var(--cream-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', opacity: 0.3, overflow: 'hidden' }}>
+                  {item.image_url
+                    ? <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 3 }} />
+                    : item.category === 'jewellery' ? '💎' : '👗'}
                 </div>
                 <div>
                   <div style={{ fontSize: '8px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>Angelina {item.category === 'fashion' ? 'Couture' : 'Jewels'}</div>
@@ -53,7 +56,9 @@ export default function CartPage() {
               <span style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', fontWeight: 300, color: 'var(--cream)' }}>Total</span>
               <span style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', fontWeight: 300, color: 'var(--gold)' }}>AED {total.toLocaleString()}</span>
             </div>
-            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'var(--gold)', color: 'var(--black)' }}>Proceed to Checkout →</button>
+            <button onClick={() => navigate('/checkout')} className="btn-primary" style={{ width: '100%', justifyContent: 'center', background: 'var(--gold)', color: 'var(--black)', border: 'none' }}>
+              Proceed to Checkout →
+            </button>
             <Link to="/shop" style={{ display: 'block', textAlign: 'center', marginTop: '16px', fontSize: '10px', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(250,248,243,0.4)' }}>Continue Shopping</Link>
           </div>
         </div>

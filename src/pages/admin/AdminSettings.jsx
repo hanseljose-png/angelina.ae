@@ -15,7 +15,6 @@ export default function AdminSettings() {
   useEffect(() => {
     if (siteSettings && Object.keys(siteSettings).length > 0) {
       setForm({ ...siteSettings })
-      // Parse hero images array
       try {
         const imgs = siteSettings.heroImages ? JSON.parse(siteSettings.heroImages) : (siteSettings.heroImageUrl ? [siteSettings.heroImageUrl] : [])
         setHeroImages(imgs)
@@ -27,8 +26,7 @@ export default function AdminSettings() {
 
   const handleSave = async () => {
     setSaving(true)
-    const updatedForm = { ...form, heroImages: JSON.stringify(heroImages) }
-    await saveSettings(updatedForm)
+    await saveSettings(form)
     await fetchSettings()
     setSaving(false)
     setSaved(true)
@@ -49,9 +47,7 @@ export default function AdminSettings() {
         if (error) throw error
         const { data: urlData } = supabase.storage.from('site-images').getPublicUrl(fileName)
         newUrls.push(urlData.publicUrl)
-      } catch (err) {
-        console.error('Upload error:', err)
-      }
+      } catch (err) { console.error(err) }
     }
     const updated = [...heroImages, ...newUrls]
     setHeroImages(updated)
@@ -80,6 +76,8 @@ export default function AdminSettings() {
     { id: 'hero', label: 'Hero Section' },
     { id: 'story', label: 'Brand Story' },
     { id: 'contact', label: 'Contact Info' },
+    { id: 'shipping', label: 'Shipping Page' },
+    { id: 'hours', label: 'Business Hours' },
   ]
 
   return (
@@ -99,55 +97,31 @@ export default function AdminSettings() {
           <>
             <div style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '28px' }}>Hero Section</div>
             <div style={{ display: 'grid', gap: '20px' }}>
-
-              {/* HERO SLIDESHOW IMAGES */}
               <div>
-                <label style={labelStyle}>Hero Slideshow Images (auto-rotates every 4 seconds)</label>
-
-                {/* Current images grid */}
+                <label style={labelStyle}>Hero Slideshow Images</label>
+                <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleImageUpload} />
                 {heroImages.length > 0 && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px', marginBottom: '12px' }}>
                     {heroImages.map((url, i) => (
                       <div key={i} style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden' }}>
                         <img src={url} alt={`Hero ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: 0, transition: 'opacity 0.3s' }}
+                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.3s' }}
                           onMouseEnter={e => e.currentTarget.style.opacity = '1'}
                           onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
-                          <div style={{ color: 'var(--gold)', fontSize: '11px', letterSpacing: '2px' }}>Photo {i+1}</div>
-                          <button onClick={() => removeImage(i)}
-                            style={{ padding: '6px 14px', background: '#dc2626', border: 'none', color: '#fff', fontSize: '10px', letterSpacing: '1px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                            Remove
-                          </button>
+                          <button onClick={() => removeImage(i)} style={{ padding: '6px 14px', background: '#dc2626', border: 'none', color: '#fff', fontSize: '10px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Remove</button>
                         </div>
-                        {i === 0 && <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'var(--gold)', color: 'var(--black)', fontSize: '8px', letterSpacing: '2px', padding: '3px 8px', fontWeight: 700 }}>FIRST</div>}
+                        {i === 0 && <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'var(--gold)', color: 'var(--black)', fontSize: '7px', letterSpacing: '2px', padding: '2px 6px', fontWeight: 700 }}>FIRST</div>}
                       </div>
                     ))}
                   </div>
                 )}
-
-                {/* Upload button */}
-                <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleImageUpload} />
                 <div onClick={() => fileInputRef.current.click()}
-                  style={{ border: '2px dashed rgba(201,168,76,0.3)', padding: '32px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s' }}
+                  style={{ border: '2px dashed rgba(201,168,76,0.3)', padding: '28px', textAlign: 'center', cursor: 'pointer' }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(201,168,76,0.6)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(201,168,76,0.3)'}>
-                  {uploading ? (
-                    <div style={{ color: 'var(--gold)', fontSize: '13px', letterSpacing: '2px' }}>Uploading...</div>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: '36px', marginBottom: '10px', opacity: 0.4 }}>📷</div>
-                      <div style={{ fontSize: '13px', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(250,248,243,0.5)', marginBottom: '6px' }}>
-                        {heroImages.length > 0 ? '+ Add More Photos' : 'Upload Hero Photos'}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'rgba(250,248,243,0.25)' }}>Select multiple photos at once — they will rotate every 4 seconds</div>
-                    </>
-                  )}
-                </div>
-                <div style={{ fontSize: '11px', color: 'rgba(250,248,243,0.3)', marginTop: '8px', lineHeight: 1.6 }}>
-                  💡 Tip: Upload 3–5 photos. They will smoothly fade between each other on the homepage. Recommended: portrait orientation, dark background.
+                  <div style={{ fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(250,248,243,0.4)' }}>{uploading ? 'Uploading...' : '+ Add Hero Photos (select multiple)'}</div>
                 </div>
               </div>
-
               <div><label style={labelStyle}>Badge Text</label><input value={form.heroBadge || ''} onChange={e => set('heroBadge', e.target.value)} style={inputStyle} onFocus={focus} onBlur={blur} /></div>
               <div><label style={labelStyle}>Main Headline</label><input value={form.heroTitle || ''} onChange={e => set('heroTitle', e.target.value)} style={inputStyle} onFocus={focus} onBlur={blur} /></div>
               <div><label style={labelStyle}>Subtitle</label><input value={form.heroSubtitle || ''} onChange={e => set('heroSubtitle', e.target.value)} style={inputStyle} onFocus={focus} onBlur={blur} /></div>
@@ -159,7 +133,7 @@ export default function AdminSettings() {
 
         {activeSection === 'story' && (
           <>
-            <div style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '28px' }}>Brand Story Section</div>
+            <div style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '28px' }}>Brand Story</div>
             <div style={{ display: 'grid', gap: '20px' }}>
               <div><label style={labelStyle}>Story Headline</label><input value={form.storyTitle || ''} onChange={e => set('storyTitle', e.target.value)} style={inputStyle} onFocus={focus} onBlur={blur} /></div>
               <div><label style={labelStyle}>Story Body Text</label><textarea value={form.storyBody || ''} onChange={e => set('storyBody', e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} onFocus={focus} onBlur={blur} /></div>
@@ -175,11 +149,42 @@ export default function AdminSettings() {
           <>
             <div style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '28px' }}>Contact Information</div>
             <div style={{ display: 'grid', gap: '20px' }}>
-              {[['contactEmail','Email Address','hello@angelina.ae'],['contactPhone','Phone / WhatsApp','+971 50 000 0000'],['contactLocation','Location','Dubai, UAE']].map(([key, label, placeholder]) => (
-                <div key={key}>
-                  <label style={labelStyle}>{label}</label>
-                  <input value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder} style={inputStyle} onFocus={focus} onBlur={blur} />
-                </div>
+              {[['contactEmail','Email Address','hello@angelina.ae'],['contactPhone','Phone / WhatsApp','+971 50 000 0000'],['contactLocation','Location','Dubai, UAE'],['contactAddress','Full Address','Marina Plaza, Dubai Marina']].map(([key, label, placeholder]) => (
+                <div key={key}><label style={labelStyle}>{label}</label><input value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder} style={inputStyle} onFocus={focus} onBlur={blur} /></div>
+              ))}
+              <div style={{ padding: '14px', background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.1)', fontSize: '12px', color: 'rgba(250,248,243,0.4)' }}>
+                ✅ These appear on Contact Us page and footer. Changes are live everywhere instantly.
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeSection === 'shipping' && (
+          <>
+            <div style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '28px' }}>Shipping & Returns Page</div>
+            <div style={{ display: 'grid', gap: '20px' }}>
+              {[
+                ['shippingFreeDesc', 'Free Shipping Description', 'Enjoy complimentary shipping on all orders across the UAE...'],
+                ['shippingSameDayDesc', 'Same-Day Delivery Description', 'Available in Dubai for orders placed before 12:00 PM...'],
+                ['shippingIntlDesc', 'International Shipping Description', 'We ship to GCC countries...'],
+                ['shippingReturnsDesc', 'Returns Policy', 'We accept returns within 14 days of delivery...'],
+              ].map(([key, label, placeholder]) => (
+                <div key={key}><label style={labelStyle}>{label}</label><textarea value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder} rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7 }} onFocus={focus} onBlur={blur} /></div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {activeSection === 'hours' && (
+          <>
+            <div style={{ fontSize: '11px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '28px' }}>Business Hours</div>
+            <div style={{ display: 'grid', gap: '20px' }}>
+              {[
+                ['hoursWeekdays', 'Weekday Hours', 'Saturday – Thursday, 10:00 AM – 8:00 PM'],
+                ['hoursFriday', 'Friday Hours', 'Closed'],
+                ['hoursNote', 'Additional Note', 'Available on WhatsApp 24/7'],
+              ].map(([key, label, placeholder]) => (
+                <div key={key}><label style={labelStyle}>{label}</label><input value={form[key] || ''} onChange={e => set(key, e.target.value)} placeholder={placeholder} style={inputStyle} onFocus={focus} onBlur={blur} /></div>
               ))}
             </div>
           </>
