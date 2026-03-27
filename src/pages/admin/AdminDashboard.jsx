@@ -8,6 +8,7 @@ import AdminSettings from './AdminSettings'
 import AdminAnalytics from './AdminAnalytics'
 import AdminMessages from './AdminMessages'
 import AdminOrders from './AdminOrders'
+import AdminSubscribers from './AdminSubscribers'
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState('products')
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
     { id: 'messages', label: 'Messages', icon: '◉', badge: unreadCount },
     { id: 'settings', label: 'Site Content', icon: '▣' },
     { id: 'analytics', label: 'Analytics', icon: '◎' },
+  { id: 'subscribers', label: 'Subscribers', icon: '✉' },
   ]
 
   const stats = [
@@ -100,6 +102,7 @@ export default function AdminDashboard() {
           {tab === 'messages' && <AdminMessages />}
           {tab === 'settings' && <AdminSettings />}
           {tab === 'analytics' && <AdminAnalytics />}
+          {tab === 'subscribers' && <AdminSubscribers />}
         </div>
       </main>
     </div>

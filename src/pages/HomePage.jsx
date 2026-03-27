@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useProductStore } from '../context/ProductStore'
 import ProductCard from '../components/ui/ProductCard'
+import NewsletterSection from '../components/ui/NewsletterSection'
 
 const MARQUEE_ITEMS = ['Luxury Fashion','Fine Jewellery','Handcrafted','Dubai UAE','New Arrivals','Exclusive Designs']
 
@@ -221,14 +222,7 @@ export default function HomePage() {
       </section>
 
       {/* NEWSLETTER */}
-      <section style={{ padding: '80px 60px', background: '#C9A84C', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '48px', fontWeight: 300, color: '#0A0A0A', marginBottom: '12px' }}>Join the Inner Circle</h2>
-        <p style={{ fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(0,0,0,0.5)', marginBottom: '40px' }}>Be the first to discover new collections & exclusive offers</p>
-        <div style={{ display: 'flex', maxWidth: '480px', margin: '0 auto' }}>
-          <input type="email" placeholder="Your email address" style={{ flex: 1, padding: '16px 24px', border: 'none', background: 'rgba(0,0,0,0.12)', color: '#0A0A0A', fontFamily: 'var(--font-sans)', fontSize: '12px', outline: 'none' }} />
-          <button className="btn-primary" style={{ background: '#0A0A0A', color: '#C9A84C', padding: '16px 28px' }}>Subscribe</button>
-        </div>
-      </section>
+      <NewsletterSection />
 
       <style>{`
         @keyframes fadeUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
