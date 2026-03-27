@@ -6,6 +6,9 @@ import ShopPage from './pages/ShopPage'
 import ProductPage from './pages/ProductPage'
 import CartPage from './pages/CartPage'
 import AboutPage from './pages/AboutPage'
+import ShippingPage from './pages/ShippingPage'
+import SizeGuidePage from './pages/SizeGuidePage'
+import ContactPage from './pages/ContactPage'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import { CartProvider } from './context/CartContext'
@@ -28,6 +31,9 @@ function StoreLayout() {
         <Route path="/shop/:id" element={<ProductPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/shipping" element={<ShippingPage />} />
+        <Route path="/size-guide" element={<SizeGuidePage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Routes>
       <Footer />
     </>
