@@ -1,34 +1,57 @@
 import { Link } from 'react-router-dom'
-import { products } from '../data/products'
+import { useProductStore } from '../context/ProductStore'
 import ProductCard from '../components/ui/ProductCard'
 
 const MARQUEE_ITEMS = ['Luxury Fashion','Fine Jewellery','Handcrafted','Dubai UAE','New Arrivals','Exclusive Designs']
 
 export default function HomePage() {
+  const { products, siteSettings } = useProductStore()
+  const heroImage = siteSettings?.heroImageUrl || null
+  const featured = products.slice(0, 4)
+
   return (
     <main>
       {/* HERO */}
       <section style={{ height: '100vh', position: 'relative', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,#0A0A0A 0%,#1a1408 40%,#0d0d0d 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'repeating-linear-gradient(45deg,#C9A84C 0,#C9A84C 1px,transparent 0,transparent 50%)', backgroundSize: '20px 20px' }} />
-        <div style={{ position: 'absolute', right: '-80px', top: '50%', transform: 'translateY(-50%)', width: '600px', height: '600px', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '50%' }} />
-        <div style={{ position: 'relative', zIndex: 2, padding: '0 60px', maxWidth: '700px', animation: 'fadeUp 1.2s ease forwards' }}>
+
+        {/* RIGHT SIDE — image or decorative circle */}
+        {heroImage ? (
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '45%', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, #0A0A0A 0%, transparent 30%)', zIndex: 1 }} />
+            <img src={heroImage} alt="Angelina Collection"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', filter: 'brightness(0.85)' }} />
+          </div>
+        ) : (
+          <div style={{ position: 'absolute', right: '-80px', top: '50%', transform: 'translateY(-50%)', width: '600px', height: '600px', border: '1px solid rgba(201,168,76,0.15)', borderRadius: '50%' }}>
+            <div style={{ position: 'absolute', inset: '40px', border: '1px solid rgba(201,168,76,0.1)', borderRadius: '50%' }} />
+            <div style={{ position: 'absolute', inset: '80px', border: '1px solid rgba(201,168,76,0.08)', borderRadius: '50%' }} />
+          </div>
+        )}
+
+        {/* LEFT SIDE — text content */}
+        <div style={{ position: 'relative', zIndex: 2, padding: '0 60px', maxWidth: '650px', animation: 'fadeUp 1.2s ease forwards' }}>
           <div style={{ fontSize: '10px', letterSpacing: '5px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            New Collection 2025 <span style={{ width: '60px', height: '1px', background: 'var(--gold)', opacity: 0.5 }} />
+            {siteSettings?.heroBadge || 'New Collection 2025'}
+            <span style={{ width: '60px', height: '1px', background: 'var(--gold)', opacity: 0.5 }} />
           </div>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '80px', fontWeight: 300, lineHeight: 1.05, marginBottom: '12px' }}>
             Where <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Luxury</em><br />Meets Grace
           </h1>
-          <p style={{ fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '40px', fontWeight: 300 }}>Fashion & Fine Jewellery — Dubai, UAE</p>
+          <p style={{ fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '40px', fontWeight: 300 }}>
+            {siteSettings?.heroSubtitle || 'Fashion & Fine Jewellery — Dubai, UAE'}
+          </p>
           <p style={{ fontSize: '14px', lineHeight: 1.9, color: 'rgba(250,248,243,0.6)', maxWidth: '420px', marginBottom: '48px', fontWeight: 300 }}>
-            Discover curated collections of exquisite fashion and handcrafted jewellery, designed for the woman who commands every room she enters.
+            {siteSettings?.heroDesc || 'Discover curated collections of exquisite fashion and handcrafted jewellery, designed for the woman who commands every room she enters.'}
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <Link to="/shop" className="btn-primary">Explore Collection →</Link>
             <Link to="/about" className="btn-ghost">Our Story</Link>
           </div>
         </div>
-        <div style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', color: 'rgba(250,248,243,0.3)', fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase' }}>
+
+        <div style={{ position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', color: 'rgba(250,248,243,0.3)', fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', zIndex: 2 }}>
           <div style={{ width: '1px', height: '50px', background: 'linear-gradient(to bottom,var(--gold),transparent)', animation: 'scrollPulse 2s ease infinite' }} />
           Scroll
         </div>
@@ -37,9 +60,9 @@ export default function HomePage() {
       {/* MARQUEE */}
       <div style={{ background: 'var(--gold)', padding: '12px 0', overflow: 'hidden', whiteSpace: 'nowrap' }}>
         <div style={{ display: 'inline-flex', animation: 'marquee 20s linear infinite' }}>
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
+          {[...(siteSettings?.marqueeItems?.split(',') || MARQUEE_ITEMS), ...(siteSettings?.marqueeItems?.split(',') || MARQUEE_ITEMS)].map((item, i) => (
             <span key={i}>
-              <span style={{ fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', color: 'var(--black)', fontWeight: 600, padding: '0 40px' }}>{item}</span>
+              <span style={{ fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', color: 'var(--black)', fontWeight: 600, padding: '0 40px' }}>{item.trim()}</span>
               <span style={{ color: 'var(--black)', opacity: 0.4, fontSize: '14px' }}>✦</span>
             </span>
           ))}
@@ -54,7 +77,7 @@ export default function HomePage() {
           <div className="section-rule" style={{ margin: '24px auto 0' }} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '2px' }}>
-          {products.slice(0, 4).map(p => <ProductCard key={p.id} product={p} />)}
+          {featured.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
         <div style={{ textAlign: 'center', marginTop: '50px' }}>
           <Link to="/shop" className="btn-primary" style={{ background: 'var(--black)', color: 'var(--gold)' }}>View All Products →</Link>
@@ -66,8 +89,11 @@ export default function HomePage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <div style={{ position: 'absolute', top: '-20px', left: '-20px', right: '20px', bottom: '20px', border: '1px solid rgba(201,168,76,0.2)' }} />
-            <div style={{ aspectRatio: '3/4', maxHeight: '500px', background: 'linear-gradient(160deg,#1a1408,#0d0d0d)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '150px', fontWeight: 300, color: 'rgba(201,168,76,0.1)', lineHeight: 1 }}>A</div>
+            <div style={{ aspectRatio: '3/4', maxHeight: '500px', background: 'linear-gradient(160deg,#1a1408,#0d0d0d)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+              {heroImage
+                ? <img src={heroImage} alt="Brand Story" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', opacity: 0.8 }} />
+                : <div style={{ fontFamily: 'var(--font-serif)', fontSize: '150px', fontWeight: 300, color: 'rgba(201,168,76,0.1)', lineHeight: 1 }}>A</div>
+              }
             </div>
           </div>
           <div>
@@ -75,11 +101,10 @@ export default function HomePage() {
             <h2 className="section-title">Crafted with <em>Passion</em></h2>
             <div className="section-rule" />
             <p style={{ fontSize: '14px', lineHeight: 2, color: 'rgba(250,248,243,0.55)', marginTop: '28px', fontWeight: 300 }}>
-              Born in the heart of Dubai, Angelina was founded on the belief that every woman deserves to feel extraordinary. We blend traditional craftsmanship with contemporary elegance, creating pieces that transcend trends.<br /><br />
-              Each garment is tailored to perfection. Each jewel is set by hand. Every detail is a testament to our commitment to excellence.
+              {siteSettings?.storyBody || 'Born in the heart of Dubai, Angelina was founded on the belief that every woman deserves to feel extraordinary.'}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px', marginTop: '40px', paddingTop: '40px', borderTop: '1px solid rgba(201,168,76,0.15)' }}>
-              {[['12+','Years'],['500+','Designs'],['UAE','Based']].map(([num,label]) => (
+              {[[siteSettings?.statYears||'12+','Years'],[siteSettings?.statDesigns||'500+','Designs'],['UAE','Based']].map(([num,label]) => (
                 <div key={label} style={{ textAlign: 'center' }}>
                   <div style={{ fontFamily: 'var(--font-serif)', fontSize: '40px', fontWeight: 300, color: 'var(--gold)' }}>{num}</div>
                   <div style={{ fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginTop: '6px' }}>{label}</div>
