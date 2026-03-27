@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useProductStore } from '../../context/ProductStore'
+import { supabase } from '../../lib/supabase'
 
-const EMPTY = { name: '', category: 'fashion', price: '', oldPrice: '', badge: '', description: '', material: '', origin: '', sizes: '' }
+const EMPTY = { name: '', category: 'fashion', price: '', oldPrice: '', badge: '', description: '', material: '', origin: '', sizes: '', image_url: '' }
+
+const BG_COLORS = {
+  fashion: 'linear-gradient(160deg,#f0e8d0,#e8d5a3)',
+  jewellery: 'linear-gradient(160deg,#1a1a1a,#2d2d2d)',
+}
 
 export default function AdminProducts() {
   const { products, addProduct, updateProduct, deleteProduct, loading } = useProductStore()
@@ -11,6 +17,9 @@ export default function AdminProducts() {
   const [search, setSearch] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [uploadingImg, setUploadingImg] = useState(false)
+  const [imgPreview, setImgPreview] = useState(null)
+  const fileInputRef = useRef()
 
   const filtered = products.filter(p =>
     p.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -21,10 +30,30 @@ export default function AdminProducts() {
     setEditing(p.id)
     setAdding(false)
     setForm({ ...p, sizes: Array.isArray(p.sizes) ? p.sizes.join(',') : (p.sizes || ''), oldPrice: p.old_price || p.oldPrice || '' })
+    setImgPreview(p.image_url || null)
   }
-  const openAdd = () => { setAdding(true); setEditing(null); setForm(EMPTY) }
-  const cancel = () => { setEditing(null); setAdding(false); setForm(EMPTY) }
+  const openAdd = () => { setAdding(true); setEditing(null); setForm(EMPTY); setImgPreview(null) }
+  const cancel = () => { setEditing(null); setAdding(false); setForm(EMPTY); setImgPreview(null) }
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setImgPreview(URL.createObjectURL(file))
+    setUploadingImg(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `product-${Date.now()}.${fileExt}`
+      const { error } = await supabase.storage.from('site-images').upload(fileName, file, { upsert: true })
+      if (error) throw error
+      const { data: urlData } = supabase.storage.from('site-images').getPublicUrl(fileName)
+      setImgPreview(urlData.publicUrl)
+      set('image_url', urlData.publicUrl)
+    } catch (err) {
+      alert('Upload failed. Make sure the site-images bucket exists in Supabase.')
+    }
+    setUploadingImg(false)
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -35,10 +64,7 @@ export default function AdminProducts() {
     cancel()
   }
 
-  const doDelete = async () => {
-    await deleteProduct(deleteConfirm)
-    setDeleteConfirm(null)
-  }
+  const doDelete = async () => { await deleteProduct(deleteConfirm); setDeleteConfirm(null) }
 
   const labelStyle = { display: 'block', fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(250,248,243,0.35)', marginBottom: '8px' }
   const inputStyle = { width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,168,76,0.15)', color: 'var(--cream)', fontSize: '13px', outline: 'none', fontFamily: 'var(--font-sans)', borderRadius: '2px' }
@@ -48,12 +74,12 @@ export default function AdminProducts() {
   if (loading) return (
     <div style={{ textAlign: 'center', padding: '80px', color: 'rgba(250,248,243,0.3)' }}>
       <div style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', color: 'var(--gold)', marginBottom: '12px' }}>Loading products...</div>
-      <div style={{ fontSize: '12px' }}>Connecting to database</div>
     </div>
   )
 
   return (
     <div>
+      {/* Toolbar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search products..."
           style={{ ...inputStyle, width: '300px' }} onFocus={focus} onBlur={blur} />
@@ -62,22 +88,64 @@ export default function AdminProducts() {
         </button>
       </div>
 
+      {/* ADD / EDIT FORM */}
       {(adding || editing !== null) && (
         <div style={{ background: '#111', border: '1px solid rgba(201,168,76,0.2)', padding: '32px', marginBottom: '32px' }}>
           <div style={{ fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: '28px' }}>
             {adding ? '+ Add New Product' : '✎ Edit Product'}
           </div>
+
+          {/* PRODUCT IMAGE UPLOAD */}
+          <div style={{ marginBottom: '24px' }}>
+            <label style={labelStyle}>Product Image</label>
+            <div style={{ display: 'grid', gridTemplateColumns: imgPreview ? '160px 1fr' : '1fr', gap: '16px', alignItems: 'start' }}>
+              {imgPreview && (
+                <div style={{ position: 'relative' }}>
+                  <img src={imgPreview} alt="Product"
+                    style={{ width: '160px', height: '200px', objectFit: 'cover', display: 'block', border: '1px solid rgba(201,168,76,0.2)' }} />
+                  {uploadingImg && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)', fontSize: '11px', letterSpacing: '2px' }}>
+                      Uploading...
+                    </div>
+                  )}
+                </div>
+              )}
+              <div>
+                <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} />
+                <div onClick={() => fileInputRef.current.click()}
+                  style={{ border: '2px dashed rgba(201,168,76,0.25)', padding: imgPreview ? '24px' : '36px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s', height: imgPreview ? 'auto' : '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(201,168,76,0.6)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(201,168,76,0.25)'}>
+                  <div style={{ fontSize: '28px', marginBottom: '8px', opacity: 0.4 }}>📷</div>
+                  <div style={{ fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', color: 'rgba(250,248,243,0.4)', marginBottom: '4px' }}>
+                    {imgPreview ? 'Click to change photo' : 'Click to upload product photo'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: 'rgba(250,248,243,0.2)' }}>JPG, PNG, WebP — Max 10MB</div>
+                </div>
+                {imgPreview && (
+                  <button onClick={() => { setImgPreview(null); set('image_url', '') }}
+                    style={{ marginTop: '8px', padding: '6px 16px', background: 'transparent', border: '1px solid rgba(220,38,38,0.3)', color: '#f87171', fontSize: '10px', letterSpacing: '1px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                    Remove Image
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* PRODUCT FIELDS */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
             <div><label style={labelStyle}>Product Name *</label><input value={form.name} onChange={e => set('name', e.target.value)} style={inputStyle} onFocus={focus} onBlur={blur} /></div>
-            <div><label style={labelStyle}>Category *</label>
+            <div>
+              <label style={labelStyle}>Category *</label>
               <select value={form.category} onChange={e => set('category', e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                 <option value="fashion">Fashion</option>
                 <option value="jewellery">Jewellery</option>
               </select>
             </div>
             <div><label style={labelStyle}>Price (AED) *</label><input value={form.price} onChange={e => set('price', e.target.value)} type="number" style={inputStyle} onFocus={focus} onBlur={blur} /></div>
-            <div><label style={labelStyle}>Original Price (AED) — for Sale</label><input value={form.oldPrice || ''} onChange={e => set('oldPrice', e.target.value)} type="number" style={inputStyle} onFocus={focus} onBlur={blur} /></div>
-            <div><label style={labelStyle}>Badge</label>
+            <div><label style={labelStyle}>Original Price (AED) — for Sale badge</label><input value={form.oldPrice || ''} onChange={e => set('oldPrice', e.target.value)} type="number" style={inputStyle} onFocus={focus} onBlur={blur} /></div>
+            <div>
+              <label style={labelStyle}>Badge</label>
               <select value={form.badge || ''} onChange={e => set('badge', e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                 <option value="">None</option>
                 <option value="New">New</option>
@@ -93,10 +161,11 @@ export default function AdminProducts() {
             <label style={labelStyle}>Description</label>
             <textarea value={form.description || ''} onChange={e => set('description', e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7 }} onFocus={focus} onBlur={blur} />
           </div>
+
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={handleSave} disabled={saving}
+            <button onClick={handleSave} disabled={saving || uploadingImg}
               style={{ padding: '13px 36px', background: saving ? '#444' : 'var(--gold)', color: 'var(--black)', border: 'none', fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)' }}>
-              {saving ? 'Saving...' : adding ? 'Add Product' : 'Save Changes'}
+              {saving ? 'Saving...' : uploadingImg ? 'Uploading image...' : adding ? 'Add Product' : 'Save Changes'}
             </button>
             <button onClick={cancel} style={{ padding: '13px 24px', background: 'transparent', color: 'rgba(250,248,243,0.4)', border: '1px solid rgba(250,248,243,0.15)', fontSize: '10px', letterSpacing: '3px', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
               Cancel
@@ -105,13 +174,23 @@ export default function AdminProducts() {
         </div>
       )}
 
+      {/* PRODUCTS TABLE */}
       <div style={{ background: '#111', border: '1px solid rgba(201,168,76,0.08)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 120px 100px 140px', padding: '14px 24px', borderBottom: '1px solid rgba(201,168,76,0.08)', fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(250,248,243,0.25)' }}>
-          <span>Product</span><span>Category</span><span>Price (AED)</span><span>Badge</span><span style={{ textAlign: 'right' }}>Actions</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '60px 2fr 1fr 120px 100px 140px', padding: '14px 24px', borderBottom: '1px solid rgba(201,168,76,0.08)', fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: 'rgba(250,248,243,0.25)' }}>
+          <span>Photo</span><span>Product</span><span>Category</span><span>Price (AED)</span><span>Badge</span><span style={{ textAlign: 'right' }}>Actions</span>
         </div>
         {filtered.length === 0 && <div style={{ padding: '48px', textAlign: 'center', color: 'rgba(250,248,243,0.2)', fontSize: '13px' }}>No products found.</div>}
         {filtered.map((p, i) => (
-          <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 120px 100px 140px', padding: '18px 24px', borderBottom: i < filtered.length - 1 ? '1px solid rgba(201,168,76,0.06)' : 'none', alignItems: 'center' }}>
+          <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '60px 2fr 1fr 120px 100px 140px', padding: '16px 24px', borderBottom: i < filtered.length - 1 ? '1px solid rgba(201,168,76,0.06)' : 'none', alignItems: 'center', transition: 'background 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(201,168,76,0.03)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            {/* Product thumbnail */}
+            <div style={{ width: '44px', height: '52px', overflow: 'hidden', background: BG_COLORS[p.category] || BG_COLORS.fashion, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {p.image_url
+                ? <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: '20px', opacity: 0.3 }}>{p.category === 'jewellery' ? '💎' : '👗'}</span>
+              }
+            </div>
             <div>
               <div style={{ fontFamily: 'var(--font-serif)', fontSize: '16px', color: 'var(--cream)', marginBottom: '2px' }}>{p.name}</div>
               <div style={{ fontSize: '11px', color: 'rgba(250,248,243,0.3)' }}>{p.material || '—'}</div>
@@ -122,8 +201,9 @@ export default function AdminProducts() {
               {(p.old_price || p.oldPrice) && <div style={{ fontSize: '10px', color: '#777', textDecoration: 'line-through' }}>{(p.old_price || p.oldPrice)?.toLocaleString()}</div>}
             </div>
             <div>
-              {p.badge ? <span style={{ fontSize: '8px', letterSpacing: '2px', textTransform: 'uppercase', padding: '4px 10px', background: p.badge === 'Sale' ? 'rgba(220,38,38,0.15)' : 'rgba(201,168,76,0.15)', color: p.badge === 'Sale' ? '#f87171' : 'var(--gold)', fontWeight: 600 }}>{p.badge}</span>
-              : <span style={{ fontSize: '11px', color: 'rgba(250,248,243,0.2)' }}>—</span>}
+              {p.badge
+                ? <span style={{ fontSize: '8px', letterSpacing: '2px', textTransform: 'uppercase', padding: '4px 10px', background: p.badge === 'Sale' ? 'rgba(220,38,38,0.15)' : 'rgba(201,168,76,0.15)', color: p.badge === 'Sale' ? '#f87171' : 'var(--gold)', fontWeight: 600 }}>{p.badge}</span>
+                : <span style={{ fontSize: '11px', color: 'rgba(250,248,243,0.2)' }}>—</span>}
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button onClick={() => openEdit(p)} style={{ padding: '7px 16px', background: 'transparent', border: '1px solid rgba(201,168,76,0.25)', color: 'var(--gold)', fontSize: '9px', letterSpacing: '2px', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Edit</button>
@@ -133,6 +213,7 @@ export default function AdminProducts() {
         ))}
       </div>
 
+      {/* DELETE CONFIRM */}
       {deleteConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: '#111', border: '1px solid rgba(201,168,76,0.2)', padding: '48px', maxWidth: '400px', width: '90%', textAlign: 'center' }}>
