@@ -1,22 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAdmin } from '../../context/AdminContext'
 import { useProductStore } from '../../context/ProductStore'
+import { supabase } from '../../lib/supabase'
 import AdminProducts from './AdminProducts'
 import AdminSettings from './AdminSettings'
 import AdminAnalytics from './AdminAnalytics'
-
-const NAV = [
-  { id: 'products', label: 'Products', icon: '◈' },
-  { id: 'settings', label: 'Site Content', icon: '◉' },
-  { id: 'analytics', label: 'Analytics', icon: '◎' },
-  { id: 'orders', label: 'Orders', icon: '◇' },
-]
+import AdminMessages from './AdminMessages'
+import AdminOrders from './AdminOrders'
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState('products')
   const { logout } = useAdmin()
   const { products } = useProductStore()
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [orderCount, setOrderCount] = useState(0)
+
+  useEffect(() => {
+    fetchCounts()
+  }, [])
+
+  const fetchCounts = async () => {
+    const { count: msgCount } = await supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('read', false)
+    const { count: ordCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending')
+    setUnreadCount(msgCount || 0)
+    setOrderCount(ordCount || 0)
+  }
+
+  const NAV = [
+    { id: 'products', label: 'Products', icon: '◈' },
+    { id: 'orders', label: 'Orders', icon: '◇', badge: orderCount },
+    { id: 'messages', label: 'Messages', icon: '◉', badge: unreadCount },
+    { id: 'settings', label: 'Site Content', icon: '▣' },
+    { id: 'analytics', label: 'Analytics', icon: '◎' },
+  ]
 
   const stats = [
     { label: 'Total Products', value: products.length },
@@ -27,7 +44,6 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0d0d0d', fontFamily: 'var(--font-sans)' }}>
-      {/* SIDEBAR */}
       <aside style={{ width: '240px', background: '#0a0a0a', borderRight: '1px solid rgba(201,168,76,0.1)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <div style={{ padding: '32px 28px 24px', borderBottom: '1px solid rgba(201,168,76,0.1)' }}>
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', letterSpacing: '5px', color: 'var(--gold)', textTransform: 'uppercase' }}>Angelina</div>
@@ -35,9 +51,13 @@ export default function AdminDashboard() {
         </div>
         <nav style={{ padding: '24px 0', flex: 1 }}>
           {NAV.map(item => (
-            <button key={item.id} onClick={() => setTab(item.id)}
+            <button key={item.id} onClick={() => { setTab(item.id); fetchCounts() }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 28px', border: 'none', background: tab === item.id ? 'rgba(201,168,76,0.08)' : 'transparent', color: tab === item.id ? 'var(--gold)' : 'rgba(250,248,243,0.4)', fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', cursor: 'pointer', textAlign: 'left', borderLeft: tab === item.id ? '2px solid var(--gold)' : '2px solid transparent', transition: 'all 0.2s', fontFamily: 'var(--font-sans)' }}>
-              <span style={{ fontSize: '16px' }}>{item.icon}</span> {item.label}
+              <span style={{ fontSize: '16px' }}>{item.icon}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.badge > 0 && (
+                <span style={{ background: 'var(--gold)', color: 'var(--black)', fontSize: '10px', fontWeight: 700, borderRadius: '10px', padding: '2px 8px', minWidth: '20px', textAlign: 'center' }}>{item.badge}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -52,13 +72,10 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* MAIN */}
       <main style={{ flex: 1, overflow: 'auto' }}>
         <div style={{ padding: '24px 40px', borderBottom: '1px solid rgba(201,168,76,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a0a' }}>
           <div>
-            <div style={{ fontSize: '20px', fontFamily: 'var(--font-serif)', fontWeight: 300, color: 'var(--cream)' }}>
-              {NAV.find(n => n.id === tab)?.label}
-            </div>
+            <div style={{ fontSize: '20px', fontFamily: 'var(--font-serif)', fontWeight: 300, color: 'var(--cream)' }}>{NAV.find(n => n.id === tab)?.label}</div>
             <div style={{ fontSize: '11px', color: 'rgba(250,248,243,0.3)', marginTop: '2px' }}>angelina.ae</div>
           </div>
           <div style={{ fontSize: '11px', color: 'rgba(250,248,243,0.3)', letterSpacing: '1px' }}>
@@ -79,14 +96,10 @@ export default function AdminDashboard() {
 
         <div style={{ padding: '32px 40px' }}>
           {tab === 'products' && <AdminProducts />}
+          {tab === 'orders' && <AdminOrders />}
+          {tab === 'messages' && <AdminMessages />}
           {tab === 'settings' && <AdminSettings />}
           {tab === 'analytics' && <AdminAnalytics />}
-          {tab === 'orders' && (
-            <div style={{ textAlign: 'center', padding: '80px', color: 'rgba(250,248,243,0.3)' }}>
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '32px', marginBottom: '12px', color: 'rgba(250,248,243,0.15)' }}>Orders</div>
-              <div style={{ fontSize: '12px', letterSpacing: '2px' }}>Connect PayTabs or Telr payment gateway to manage orders here.</div>
-            </div>
-          )}
         </div>
       </main>
     </div>
