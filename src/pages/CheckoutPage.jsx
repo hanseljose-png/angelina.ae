@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useProductStore } from '../context/ProductStore'
 import { supabase } from '../lib/supabase'
 
 const CITIES = ['Abu Dhabi','Dubai','Sharjah','Ajman','Umm Al Quwain','Ras Al Khaimah','Fujairah','Al Ain','Other']
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart()
+  const { fetchProducts } = useProductStore()
   const navigate = useNavigate()
   const [step, setStep] = useState(1) // 1=info, 2=confirm, 3=success
   const [placing, setPlacing] = useState(false)
@@ -58,6 +60,7 @@ export default function CheckoutPage() {
         created_at: new Date().toISOString(),
       }])
     } catch (e) { console.error(e) }
+    await fetchProducts() // Refresh stock immediately
     clearCart()
     setPlacing(false)
     setStep(3)
