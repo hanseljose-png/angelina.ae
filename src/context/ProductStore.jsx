@@ -58,6 +58,7 @@ export function ProductStoreProvider({ children }) {
       origin: product.origin || null,
       sizes: Array.isArray(product.sizes) ? product.sizes.join(',') : (product.sizes || null),
       image_url: product.image_url || null,
+      stock: product.stock !== undefined ? Number(product.stock) : 0,
     }])
     fetchProducts()
   }
@@ -74,6 +75,7 @@ export function ProductStoreProvider({ children }) {
       origin: updates.origin || null,
       sizes: Array.isArray(updates.sizes) ? updates.sizes.join(',') : (updates.sizes || null),
       image_url: updates.image_url || null,
+      stock: updates.stock !== undefined ? Number(updates.stock) : 0,
     }).eq('id', id)
     fetchProducts()
   }

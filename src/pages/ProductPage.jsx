@@ -17,7 +17,7 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState(null)
   const [added, setAdded] = useState(false)
   const [imgError, setImgError] = useState(false)
-  const { addToCart } = useCart()
+  const { addToCart, items } = useCart()
 
   if (!product) return (
     <div style={{ padding: '200px 60px', textAlign: 'center', color: 'var(--black)', minHeight: '100vh', background: 'var(--cream)' }}>
@@ -25,43 +25,51 @@ export default function ProductPage() {
     </div>
   )
 
+  const stock = product.stock ?? 0
+  const inCart = items.find(i => i.id === product.id)?.qty || 0
+  const outOfStock = stock === 0
+  const maxReached = inCart >= stock
+  const hasImage = product.image_url && !imgError
+
   const handleAdd = () => {
+    if (outOfStock || maxReached) return
     addToCart(product)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
 
-  const hasImage = product.image_url && !imgError
-
   return (
     <main style={{ paddingTop: '80px', minHeight: '100vh', background: 'var(--cream)' }}>
-      {/* Breadcrumb */}
       <div style={{ padding: '20px 60px', fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '1px' }}>
         <Link to="/" style={{ color: 'var(--text-muted)' }}>Home</Link> /&nbsp;
         <Link to="/shop" style={{ color: 'var(--text-muted)' }}>Shop</Link> / {product.name}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0', minHeight: '80vh' }}>
-        {/* Product Image */}
+        {/* Image */}
         <div style={{ position: 'relative', overflow: 'hidden', background: BG_COLORS[product.id] || BG_COLORS[1], display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '600px' }}>
-          {hasImage ? (
-            <img src={product.image_url} alt={product.name}
-              onError={() => setImgError(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', position: 'absolute', inset: 0 }} />
-          ) : (
-            <span style={{ fontSize: '80px', opacity: 0.2 }}>{product.category === 'jewellery' ? '💎' : '👗'}</span>
+          {hasImage
+            ? <img src={product.image_url} alt={product.name} onError={() => setImgError(true)}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', position: 'absolute', inset: 0, filter: outOfStock ? 'grayscale(0.5) brightness(0.7)' : 'none' }} />
+            : <span style={{ fontSize: '80px', opacity: 0.2 }}>{product.category === 'jewellery' ? '💎' : '👗'}</span>
+          }
+          {outOfStock && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', zIndex: 2 }}>
+              <div style={{ background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: '12px', letterSpacing: '4px', textTransform: 'uppercase', padding: '16px 32px', fontFamily: 'var(--font-sans)' }}>Out of Stock</div>
+            </div>
           )}
         </div>
 
-        {/* Product Details */}
+        {/* Details */}
         <div style={{ padding: '60px', background: 'var(--cream)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          {product.badge && (
+          {product.badge && !outOfStock && (
             <div style={{ display: 'inline-block', background: 'var(--gold)', color: 'var(--black)', fontSize: '8px', letterSpacing: '2px', textTransform: 'uppercase', padding: '5px 12px', fontWeight: 600, marginBottom: '20px', width: 'fit-content' }}>{product.badge}</div>
           )}
           <div style={{ fontSize: '9px', letterSpacing: '4px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>
             Angelina {product.category === 'fashion' ? 'Couture' : 'Jewels'}
           </div>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '48px', fontWeight: 300, color: 'var(--black)', lineHeight: 1.1, marginBottom: '16px' }}>{product.name}</h1>
+
           <div style={{ fontSize: '28px', fontWeight: 500, color: 'var(--black)', marginBottom: '8px' }}>
             AED {product.price?.toLocaleString()}
             {(product.oldPrice || product.old_price) && (
@@ -70,9 +78,19 @@ export default function ProductPage() {
               </span>
             )}
           </div>
+
+          {/* Stock indicator */}
+          <div style={{ marginBottom: '24px' }}>
+            {outOfStock
+              ? <span style={{ fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase', color: '#f87171', fontWeight: 600 }}>● Out of Stock</span>
+              : stock <= 3
+                ? <span style={{ fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase', color: '#fbbf24', fontWeight: 600 }}>● Only {stock} left</span>
+                : <span style={{ fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase', color: '#4ade80', fontWeight: 500 }}>● In Stock</span>
+            }
+          </div>
+
           <p style={{ fontSize: '13px', lineHeight: 1.9, color: 'var(--text-muted)', marginBottom: '32px' }}>{product.description}</p>
 
-          {/* Material & Origin */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '32px' }}>
             {[['Material', product.material], ['Origin', product.origin]].map(([k, v]) => v && (
               <div key={k} style={{ padding: '16px', background: 'var(--cream-dark)' }}>
@@ -82,8 +100,7 @@ export default function ProductPage() {
             ))}
           </div>
 
-          {/* Size selector */}
-          {product.sizes && product.sizes.length > 0 && (
+          {product.sizes && product.sizes.length > 0 && !outOfStock && (
             <div style={{ marginBottom: '32px' }}>
               <div style={{ fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>Select Size</div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -97,11 +114,16 @@ export default function ProductPage() {
             </div>
           )}
 
-          {/* Add to cart */}
-          <button onClick={handleAdd} className="btn-primary"
-            style={{ justifyContent: 'center', background: added ? '#1a5c1a' : 'var(--black)', color: added ? '#fff' : 'var(--gold)', transition: 'all 0.4s', border: 'none' }}>
-            {added ? '✓ Added to Cart' : 'Add to Cart →'}
-          </button>
+          {outOfStock ? (
+            <div style={{ padding: '16px', background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '13px', color: '#f87171', textAlign: 'center', letterSpacing: '1px' }}>
+              This item is currently out of stock. Check back soon.
+            </div>
+          ) : (
+            <button onClick={handleAdd} disabled={maxReached} className="btn-primary"
+              style={{ justifyContent: 'center', background: added ? '#1a5c1a' : maxReached ? '#444' : 'var(--black)', color: added ? '#fff' : 'var(--gold)', transition: 'all 0.4s', border: 'none', cursor: maxReached ? 'not-allowed' : 'pointer' }}>
+              {added ? '✓ Added to Cart' : maxReached ? `Max quantity (${stock}) in cart` : 'Add to Cart →'}
+            </button>
+          )}
         </div>
       </div>
     </main>

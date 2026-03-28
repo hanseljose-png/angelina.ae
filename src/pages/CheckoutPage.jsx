@@ -38,6 +38,11 @@ export default function CheckoutPage() {
     const num = 'ANG-' + Date.now().toString().slice(-6)
     setOrderNum(num)
     try {
+      // Reduce stock for each item
+      for (const item of items) {
+        const newStock = Math.max(0, (item.stock ?? 0) - item.qty)
+        await supabase.from('products').update({ stock: newStock }).eq('id', item.id)
+      }
       await supabase.from('orders').insert([{
         order_number: num,
         customer_name: `${form.firstName} ${form.lastName}`,
