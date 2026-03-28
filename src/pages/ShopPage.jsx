@@ -49,7 +49,7 @@ export default function ShopPage() {
         ) : (
           <>
             <div style={{ fontSize: '11px', letterSpacing: '2px', color: 'var(--text-muted)', marginBottom: '24px' }}>{filtered.length} pieces</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '2px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '2px' }}>
               {filtered.map(p => <ProductCard key={p.id} product={p} />)}
             </div>
           </>
