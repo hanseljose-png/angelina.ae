@@ -6,9 +6,15 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([])
 
   const addToCart = (product) => {
+    const stock = product.stock ?? 0
     setItems(prev => {
       const existing = prev.find(i => i.id === product.id)
-      if (existing) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
+      if (existing) {
+        // Don't exceed stock
+        if (existing.qty >= stock) return prev
+        return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i)
+      }
+      if (stock === 0) return prev // out of stock
       return [...prev, { ...product, qty: 1 }]
     })
   }
@@ -17,7 +23,13 @@ export function CartProvider({ children }) {
 
   const updateQty = (id, qty) => {
     if (qty < 1) return removeFromCart(id)
-    setItems(prev => prev.map(i => i.id === id ? { ...i, qty } : i))
+    setItems(prev => prev.map(i => {
+      if (i.id !== id) return i
+      const stock = i.stock ?? 0
+      // Cap at stock level
+      const safeQty = stock > 0 ? Math.min(qty, stock) : qty
+      return { ...i, qty: safeQty }
+    }))
   }
 
   const clearCart = () => setItems([])
