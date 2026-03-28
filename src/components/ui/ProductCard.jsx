@@ -32,10 +32,10 @@ export default function ProductCard({ product }) {
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
 
       <Link to={`/shop/${product.id}`}>
-        <div style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden', background: BG_COLORS[product.id] || (product.category === 'jewellery' ? BG_COLORS[2] : BG_COLORS[1]) }}>
+        <div style={{ aspectRatio: '2/3', position: 'relative', overflow: 'hidden', background: BG_COLORS[product.id] || (product.category === 'jewellery' ? BG_COLORS[2] : BG_COLORS[1]) }}>
           {hasImage && (
             <img src={product.image_url} alt={product.name} onError={() => setImgError(true)}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', transition: 'transform 0.6s ease', transform: hovered && !outOfStock ? 'scale(1.05)' : 'scale(1)', filter: outOfStock ? 'grayscale(0.5) brightness(0.7)' : 'none' }} />
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center top', transition: 'transform 0.6s ease', transform: hovered && !outOfStock ? 'scale(1.05)' : 'scale(1)' }} />
           )}
           {!hasImage && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: outOfStock ? 0.3 : 1 }}>
@@ -82,15 +82,15 @@ export default function ProductCard({ product }) {
       )}
 
       {/* Info */}
-      <div style={{ padding: '20px 20px 24px', background: 'var(--cream-dark)' }}>
+      <div style={{ padding: '14px 16px 18px', background: 'var(--cream-dark)' }}>
         <div style={{ fontSize: '8px', letterSpacing: '3px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '6px' }}>
           Angelina {product.category === 'fashion' ? 'Couture' : 'Jewels'}
         </div>
         <Link to={`/shop/${product.id}`}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '19px', fontWeight: 400, color: outOfStock ? 'rgba(0,0,0,0.4)' : 'var(--black)', marginBottom: '10px', lineHeight: 1.2 }}>{product.name}</div>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', fontWeight: 400, color: outOfStock ? 'rgba(0,0,0,0.4)' : 'var(--black)', marginBottom: '10px', lineHeight: 1.2 }}>{product.name}</div>
         </Link>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: '15px', fontWeight: 500, color: outOfStock ? 'rgba(0,0,0,0.4)' : 'var(--black)' }}>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: outOfStock ? 'rgba(0,0,0,0.4)' : 'var(--black)' }}>
             AED {product.price?.toLocaleString()}
             {(product.oldPrice || product.old_price) && (
               <span style={{ fontSize: '11px', color: '#999', fontWeight: 300, textDecoration: 'line-through', marginLeft: '8px' }}>
