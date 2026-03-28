@@ -43,14 +43,7 @@ export default function ProductCard({ product }) {
             </div>
           )}
 
-          {/* Out of Stock overlay */}
-          {outOfStock && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 2 }}>
-              <div style={{ background: 'rgba(0,0,0,0.8)', color: 'rgba(250,248,243,0.9)', fontSize: '9px', letterSpacing: '3px', textTransform: 'uppercase', padding: '10px 20px', fontFamily: 'var(--font-sans)', fontWeight: 600 }}>
-                Out of Stock
-              </div>
-            </div>
-          )}
+
 
           {/* Low stock warning */}
           {!outOfStock && stock <= 3 && (
