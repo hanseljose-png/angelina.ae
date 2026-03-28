@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import Navbar from './components/layout/Navbar'
 import Footer from './components/layout/Footer'
 import HomePage from './pages/HomePage'
@@ -15,6 +16,25 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import { CartProvider } from './context/CartContext'
 import { AdminProvider, useAdmin } from './context/AdminContext'
 import { ProductStoreProvider } from './context/ProductStore'
+
+function PageTracker() {
+  const location = useLocation()
+  useEffect(() => {
+    const track = async () => {
+      try {
+        const { supabase } = await import('./lib/supabase')
+        await supabase.from('site_visits').insert([{
+          page: location.pathname + location.search,
+          referrer: document.referrer || 'direct',
+          user_agent: navigator.userAgent.substring(0, 300),
+          visited_at: new Date().toISOString(),
+        }])
+      } catch (e) {}
+    }
+    track()
+  }, [location.pathname])
+  return null
+}
 
 function ProtectedAdmin() {
   const { isLoggedIn } = useAdmin()
@@ -48,6 +68,7 @@ function App() {
       <ProductStoreProvider>
         <CartProvider>
           <BrowserRouter>
+            <PageTracker />
             <Routes>
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<ProtectedAdmin />} />
